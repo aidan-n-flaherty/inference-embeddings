@@ -88,16 +88,20 @@ class FactContrastiveDataset(Dataset):
 		true_sample = self.random.sample(true_facts, int(self.N/2)) + self._random_external(topic, int(self.N/2))
 		false_fact = self.random.choice(false_facts)
 
+		indices = list(range(self.N))
+
+		self.random.shuffle(indices)
+
 		i = self.random.randrange(int(self.N/2))
 		alt = self.random.choice([f for f in true_facts if f != true_sample[i]])
 		positive = true_sample[:i] + [alt] + true_sample[i + 1 :]
-		
-		self.random.shuffle(positive)
+
+		positive = [positive[n] for n in indices]
 
 		#i = self.random.randrange(self.N)
 		negative = true_sample[:i] + [false_fact] + true_sample[i + 1 :]
 
-		self.random.shuffle(negative)
+		positive = [negative[n] for n in indices]
 
 		return true_sample, positive, negative
 
