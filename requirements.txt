@@ -1,0 +1,7 @@
+pandas
+pytorch-lightning
+scikit-learn
+transformers
+torch
+torch-geometric
+tensorboard
