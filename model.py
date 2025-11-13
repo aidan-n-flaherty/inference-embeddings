@@ -57,7 +57,9 @@ class CustomGNN(torch.nn.Module):
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.postlayer3(x).tanh()
 
-        N, d = x.shape
+        return x
+
+        """N, d = x.shape
 
         x_i = x.unsqueeze(1).expand(N, N, d)
         x_j = x.unsqueeze(0).expand(N, N, d)
@@ -72,14 +74,13 @@ class CustomGNN(torch.nn.Module):
 
         embedding = embedding * (1 - torch.eye(N, device=x.device)) + torch.eye(N, device=x.device)
 
-        return embedding
+        return embedding"""
     
 def fully_connected_edges(n_nodes, device):
     """Return edge_index for a fully connected directed graph WITHOUT self-loops."""
     src = torch.arange(n_nodes, device=device).repeat_interleave(n_nodes)
     dst = torch.arange(n_nodes, device=device).repeat(n_nodes)
     
-    # Remove self-loops
     mask = src != dst
     src, dst = src[mask], dst[mask]
     

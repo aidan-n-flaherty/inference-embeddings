@@ -9,11 +9,6 @@ from sentence_transformers import SentenceTransformer
 
 
 class FactContrastiveDataset(Dataset):
-	"""
-	On-demand contrastive dataset for FactKG.
-	Dynamically generates (positive, negative) pairs.
-	"""
-
 	def __init__(
 		self,
 		factkg,
@@ -32,10 +27,6 @@ class FactContrastiveDataset(Dataset):
 		self.grouped = self._group_by_topic()
 		self.samples = self._collect_topics()
 		self.access = 0
-
-	# -------------------------------
-	# Internal setup helpers
-	# -------------------------------
 
 	def _load_cache(self):
 		if os.path.exists(self.cache_path):
@@ -73,8 +64,9 @@ class FactContrastiveDataset(Dataset):
 			true_facts = [f for f, d in facts if d["Label"] == [True] and "multi hop" in d["types"]]
 			false_facts = [f for f, d in facts if d["Label"] == [False] and "multi hop" in d["types"]]
 
-			if len(true_facts) >= self.N and false_facts:
+			if len(true_facts) >= int(self.N/2) and false_facts:
 				topics.append((topic, true_facts, false_facts))
+		
 		return topics
 
 	def _get_embedding(self, fact):
@@ -84,23 +76,33 @@ class FactContrastiveDataset(Dataset):
 		self.cache[fact] = emb
 		return emb
 
+	def _random_external(self, topic, n):
+		selections = self.random.sample([t for t in self.samples if t[0] != topic], n)
+
+		facts = [self.random.choice(true_facts) for (t, true_facts, false_facts) in selections]
+
+		return facts
+
 	def _make_triplet(self):
 		topic, true_facts, false_facts = self.random.choice(self.samples)
-		true_sample = self.random.sample(true_facts, self.N)
+		true_sample = self.random.sample(true_facts, int(self.N/2)) + self._random_external(topic, int(self.N/2))
 		false_fact = self.random.choice(false_facts)
 
-		# flip coin: positive or negative pair
-		i = self.random.randrange(self.N)
+		i = self.random.randrange(int(self.N/2))
 		alt = self.random.choice([f for f in true_facts if f != true_sample[i]])
 		positive = true_sample[:i] + [alt] + true_sample[i + 1 :]
 		
-		i = self.random.randrange(self.N)
+		self.random.shuffle(positive)
+
+		#i = self.random.randrange(self.N)
 		negative = true_sample[:i] + [false_fact] + true_sample[i + 1 :]
+
+		self.random.shuffle(negative)
 
 		return true_sample, positive, negative
 
 	def __len__(self):
-		return len(self.samples) * 10  # arbitrary multiplier for effective epoch size
+		return len(self.samples) * 10
 
 	def __getitem__(self, idx):
 		original, positive, negative = self._make_triplet()
@@ -110,7 +112,7 @@ class FactContrastiveDataset(Dataset):
 		neg_embs = [self._get_embedding(f) for f in negative]
 
 		self.access += 1
-		if self.access % 500 == 0 and len(self.cache) != self.current_length:  # occasionally save cache
+		if self.access % 500 == 0 and len(self.cache) != self.current_length:
 			print(f"Saving {len(self.cache) - self.current_length} new embeddings...")
 			self._save_cache()
 			print(f"New cache size: {self.current_length}")

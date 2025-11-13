@@ -41,9 +41,6 @@ if __name__ == "__main__":
 	BATCH_SIZE = 8
 	EPOCHS = 10
 
-	# -----------------------------
-	# TRAINING LOOP
-	# -----------------------------
 	for epoch in range(EPOCHS):
 		model.train()
 		total_loss = 0.0
@@ -81,13 +78,13 @@ if __name__ == "__main__":
 				accum_loss.backward()
 				optimizer.step()
 				
-				print(f"Epoch {epoch+1}/{EPOCHS} {int(n/BATCH_SIZE)}/{int(len(loader)/BATCH_SIZE)} | Loss: {accum_loss.item():.4f} | Mag: {torch.linalg.norm(anchor_out)} | Anchor+: {torch.linalg.norm(F.relu(anchor_out)):.4f} | Consistent+: {torch.linalg.norm(F.relu(positive_out)):.4f} | Contradiction+: {torch.linalg.norm(F.relu(negative_out)):.4f}")
+				print(f"Epoch {epoch+1}/{EPOCHS} {int(n/BATCH_SIZE)}/{int(len(loader)/BATCH_SIZE)} | Loss: {accum_loss.item():.4f} | Mag: {torch.linalg.norm(anchor_out):.4f} | Anchor+: {torch.linalg.norm(F.relu(anchor_out)):.4f} | Consistent+: {torch.linalg.norm(F.relu(positive_out)):.4f} | Contradiction+: {torch.linalg.norm(F.relu(negative_out)):.4f}")
 				writer.add_scalar('Loss/train', accum_loss.item(), epoch * len(loader) + n)
 				
 				#print(cos(anchor_out, negative_out), cos(anchor_out, positive_out))
 				accum_loss = None
 
-				#run_linear_probe(model, dataset, dataset, device, 1, 10 * 10, 0.01)
+				#run_linear_probe(model, dataset, dataset, device, 1, 128, 0.01)
 
 			total_loss += loss.item()
 			n += 1
@@ -96,7 +93,7 @@ if __name__ == "__main__":
 		torch.save(model.state_dict(), f"models/checkpoint-{epoch + 1}.pth")
 
 		#run_linear_probe(model, dataset, test_dataset, device, 1, 128, 0.001)
-		train_acc, train_loss, val_acc, val_loss = run_linear_probe(model, dataset, test_dataset, device, 1, 10 * 10, 0.001)
+		train_acc, train_loss, val_acc, val_loss = run_linear_probe(model, dataset, test_dataset, device, 1, 128, 0.001)
 		writer.add_scalar('Probe_Accuracy/train', train_acc, epoch * len(loader))
 		writer.add_scalar('Probe_Loss/train', train_loss, epoch * len(loader))
 		writer.add_scalar('Probe_Accuracy/test', val_acc, epoch * len(loader))

@@ -15,15 +15,12 @@ class LinearProbe(nn.Module):
 		self.flatten = nn.Flatten()
 
 	def forward(self, x):
-		return self.fc(self.flatten(x))
-		#return torch.sum(self.fc(x), dim=1)
+		#return self.fc(self.flatten(x))
+		return torch.sum(self.fc(x), dim=1)
 
-# -------------------------------------------------------
-# LINEAR PROBE TRAINING LOOP
-# -------------------------------------------------------
 def run_linear_probe(model, dataset, test_dataset, device, epochs=10, embedding_dim=128, lr=1e-3):
-	model.eval()  # freeze encoder
-	probe = LinearProbe(embedding_dim).to(device)  # match your model's output dim
+	model.eval()
+	probe = LinearProbe(embedding_dim).to(device)
 	optimizer = torch.optim.Adam(probe.parameters(), lr=lr)
 	criterion = nn.BCEWithLogitsLoss()
 
