@@ -102,11 +102,11 @@ def run_linear_probe(model, dataset, test_dataset, device, epochs=10, embedding_
 				#print(f"[Linear Probe Test] Epoch {epoch+1}/{epochs} {n}/{len(test_loader)} | Loss: {total_loss/n:.4f} | Acc: {total_acc/n:.4f} | Differentiation: {differentiation/n:.4f}")
 			
 			if mode == "train":
-				train_acc = total_acc
-				train_loss = total_loss
+				train_acc = total_acc/n
+				train_loss = total_loss/n
 			else:
-				val_acc = total_acc
-				val_loss = total_loss
+				val_acc = total_acc/n
+				val_loss = total_loss/n
 
 			print(f"[Linear Probe {mode.capitalize()}] Epoch {epoch+1}/{epochs} | Loss: {total_loss/n:.4f} | Acc: {total_acc/n:.4f} | Differentiation: {differentiation/n:.4f}")
 
