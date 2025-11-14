@@ -32,7 +32,7 @@ class CustomGNN(torch.nn.Module):
         self.layer1 = SAGEConv(hidden_dim, hidden_dim, aggr=SoftmaxAggregation())
         self.layerH1 = SAGEConv(hidden_dim, hidden_dim, aggr=SoftmaxAggregation())
         self.layer2 = SAGEConv(hidden_dim, hidden_dim, aggr=SoftmaxAggregation())
-        self.postlayer1 = nn.Linear(input_dim, hidden_dim)
+        self.postlayer1 = nn.Linear(hidden_dim, hidden_dim)
         self.postlayer2 = nn.Linear(hidden_dim, hidden_dim)
         self.postlayer3 = nn.Linear(hidden_dim, output_dim)
 
