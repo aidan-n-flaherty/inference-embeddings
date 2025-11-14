@@ -51,7 +51,7 @@ class CustomGNN(torch.nn.Module):
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer2(x, edge_info).relu()
         x = F.dropout(x, p=0.5, training=self.training)
-        x = self.postlayer1(feature_data).relu()
+        x = self.postlayer1(x).relu()
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.postlayer2(x).relu()
         x = F.dropout(x, p=0.5, training=self.training)

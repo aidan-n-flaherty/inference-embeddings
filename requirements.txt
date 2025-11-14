@@ -5,3 +5,4 @@ transformers
 torch
 torch-geometric
 tensorboard
+sentence_transformers

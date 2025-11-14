@@ -32,7 +32,7 @@ if __name__ == "__main__":
 		print("Could not load model")
 		pass
 
-	optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.00001)
+	optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
 
 	loader = DataLoader(dataset, batch_size=1, shuffle=True)
 	triplet_loss = torch.nn.TripletMarginLoss(margin=0.5, p=2)
