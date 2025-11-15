@@ -101,7 +101,9 @@ class FactContrastiveDataset(Dataset):
 		#i = self.random.randrange(self.N)
 		negative = true_sample[:i] + [false_fact] + true_sample[i + 1 :]
 
-		positive = [negative[n] for n in indices]
+		negative = [negative[n] for n in indices]
+
+		true_sample = [true_sample[n] for n in indices]
 
 		return true_sample, positive, negative
 
