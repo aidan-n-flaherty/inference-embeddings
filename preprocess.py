@@ -13,12 +13,16 @@ class FactContrastiveDataset(Dataset):
 		self,
 		factkg,
 		N=10,
+		K=[5, 5],
 		model_name="sentence-transformers/all-MiniLM-L6-v2",
 		cache_path="fact_sbert_cache.pkl",
 		seed=42,
+		types=["multi hop", "multi claim"]
 	):
 		self.factkg = factkg
+		self.types = types
 		self.N = N
+		self.K = K
 		self.current_length = 0
 		self.model = SentenceTransformer(model_name)#, model_kwargs={"torch_dtype": "float16"})
 		self.cache_path = cache_path
@@ -61,10 +65,10 @@ class FactContrastiveDataset(Dataset):
 			except:
 				pass
 
-			true_facts = [f for f, d in facts if d["Label"] == [True] and "multi hop" in d["types"]]
-			false_facts = [f for f, d in facts if d["Label"] == [False] and "multi hop" in d["types"]]
+			true_facts = [f for f, d in facts if d["Label"] == [True] and any(t in d["types"] for t in self.types)]
+			false_facts = [f for f, d in facts if d["Label"] == [False] and any(t in d["types"] for t in self.types)]
 
-			if len(true_facts) >= int(self.N/2) and false_facts:
+			if len(true_facts) >= min(self.K) and false_facts:
 				topics.append((topic, true_facts, false_facts))
 		
 		return topics
@@ -85,14 +89,15 @@ class FactContrastiveDataset(Dataset):
 
 	def _make_triplet(self):
 		topic, true_facts, false_facts = self.random.choice(self.samples)
-		true_sample = self.random.sample(true_facts, int(self.N/2)) + self._random_external(topic, int(self.N/2))
+		selection = min(max(self.K), len(true_facts))
+		true_sample = self.random.sample(true_facts, selection) + self._random_external(topic, self.N - selection)
 		false_fact = self.random.choice(false_facts)
 
 		indices = list(range(self.N))
 
 		self.random.shuffle(indices)
 
-		i = self.random.randrange(int(self.N/2))
+		i = self.random.randrange(selection)
 		alt = self.random.choice([f for f in true_facts if f != true_sample[i]])
 		positive = true_sample[:i] + [alt] + true_sample[i + 1 :]
 
@@ -105,13 +110,13 @@ class FactContrastiveDataset(Dataset):
 
 		true_sample = [true_sample[n] for n in indices]
 
-		return true_sample, positive, negative
+		return true_sample, positive, negative, indices[i], [indices[n] for n in range(selection)]
 
 	def __len__(self):
 		return len(self.samples) * 10
 
 	def __getitem__(self, idx):
-		original, positive, negative = self._make_triplet()
+		original, positive, negative, flipped_index, positive_indices = self._make_triplet()
 
 		orig_embs = [self._get_embedding(f) for f in original]
 		pos_embs = [self._get_embedding(f) for f in positive]
@@ -129,5 +134,7 @@ class FactContrastiveDataset(Dataset):
 			"negative": negative,
 			"original_embeddings": torch.stack(orig_embs),
 			"positive_embeddings": torch.stack(pos_embs),
-			"negative_embeddings" : torch.stack(neg_embs)
+			"negative_embeddings" : torch.stack(neg_embs),
+			"flipped_index": flipped_index,
+			"positive_indices": positive_indices
 		}
