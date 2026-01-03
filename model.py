@@ -431,19 +431,23 @@ class GraphTransformer(torch.nn.Module):
 		combined_in_channels = in_channels + self.pe_dim
 
 		self.conv1 = TransformerConv(combined_in_channels, hidden_channels, heads=heads)
+		self.norm1 = torch.nn.LayerNorm(hidden_channels * heads)
 		self.conv2 = TransformerConv(hidden_channels * heads, hidden_channels, heads=heads)
-		self.conv3 = TransformerConv(hidden_channels * heads, out_channels, heads=1)
+		self.norm2 = torch.nn.LayerNorm(hidden_channels * heads)
+		self.conv3 = TransformerConv(hidden_channels * heads, out_channels, heads=heads, concat=False)
 
 	def forward(self, x, edge_index, pe):
 		x = torch.cat([x, pe], dim=1)
 
 		x = F.relu(self.conv1(x, edge_index))
+		x = self.norm1(x)
 		x = F.dropout(x, p=0.2, training=self.training)
 		x = F.relu(self.conv2(x, edge_index))
+		x = self.norm2(x)
 		x = F.dropout(x, p=0.2, training=self.training)
 		x = self.conv3(x, edge_index)
 
-		return x
+		return x.tanh()
 
 class CustomGNN(torch.nn.Module):
 	def __init__(self, input_dim, hidden_dim, output_dim):
@@ -463,6 +467,14 @@ class CustomGNN(torch.nn.Module):
 			out_channels=output_dim,
 			heads=8
 		)
+		"""self.layers = UniMP(
+			input_dim=input_dim,
+			hidden_dim=hidden_dim,
+			output_dim=output_dim,
+			num_layers=3,
+			dropout=0.2,
+			heads=8
+		)"""
 		#self.layer1 = SAGEConv(input_dim, hidden_dim, aggr=LSTMAggregation(input_dim, input_dim))
 		#self.layerH1 = SAGEConv(hidden_dim, hidden_dim, aggr=LSTMAggregation(hidden_dim, hidden_dim))
 		#self.layer2 = SAGEConv(hidden_dim, output_dim, aggr=LSTMAggregation(hidden_dim, hidden_dim))
@@ -470,7 +482,7 @@ class CustomGNN(torch.nn.Module):
 		#self.postlayer2 = nn.Linear(hidden_dim, hidden_dim)
 		#self.postlayer3 = nn.Linear(hidden_dim, output_dim)
 
-		self.edge_weight = nn.Sequential(nn.Linear(output_dim * 2, 128), nn.Tanh(), nn.Linear(128, 128), nn.Tanh(), nn.Linear(128, 1))
+		#self.edge_weight = nn.Sequential(nn.Linear(output_dim * 2, 128), nn.Tanh(), nn.Linear(128, 128), nn.Tanh(), nn.Linear(128, 1))
 		self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
 
 	def forward(self, feature_data, edge_info):
@@ -495,6 +507,7 @@ class CustomGNN(torch.nn.Module):
 		#x = F.dropout(x, p=0.2, training=self.training)
 		#x = self.layer2(x, edge_info).tanh()
 		self.layers.training = self.training
+		#x = self.layers(feature_data.x, feature_data.edge_index, feature_data.pe)
 		x = self.layers(feature_data.x, feature_data.edge_index, feature_data.pe)
 		#x = F.dropout(x, p=0.2, training=self.training)
 		#x = self.postlayer1(x).relu()

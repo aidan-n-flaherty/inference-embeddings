@@ -10,7 +10,7 @@ import re
 from datasets import load_dataset
 
 if __name__ == "__main__":
-	test = True
+	validation = True
 
 	dataset = load_dataset("liar")
 
@@ -28,13 +28,13 @@ if __name__ == "__main__":
 
 	data = []
 
-	if os.path.exists(f"synthetic_data_{'test' if test else 'train'}.pkl"):
-		with open(f"synthetic_data_{'test' if test else 'train'}.pkl", "rb") as f:
+	if os.path.exists(f"synthetic_data_{'validation' if validation else 'train'}.pkl"):
+		with open(f"synthetic_data_{'validation' if validation else 'train'}.pkl", "rb") as f:
 			data = pickle.load(f)
 
 	i = len(data)
 
-	for item in (dataset["train"] if not test else dataset["test"]):
+	for item in (dataset["train"] if not validation else dataset["validation"]):
 		if any(item["statement"] == it["statement"] for it in data):
 			continue
 
@@ -61,12 +61,12 @@ if __name__ == "__main__":
 		})
 
 		i += 1
-		print(f"Iteration {i}/{len(dataset['train'] if not test else dataset["test"])}")
+		print(f"Iteration {i}/{len(dataset['train'] if not validation else dataset['validation'])}")
 
 		if i % 10 == 5:
-			with open(f"synthetic_data_{'test' if test else 'train'}_tmp.pkl", "wb") as f:
+			with open(f"synthetic_data_{'validation' if validation else 'train'}_tmp.pkl", "wb") as f:
 				pickle.dump(data, f)
 		
 		if i % 10 == 0 or i == len(dataset["train"]):
-			with open(f"synthetic_data_{'test' if test else 'train'}.pkl", "wb") as f:
+			with open(f"synthetic_data_{'validation' if validation else 'train'}.pkl", "wb") as f:
 				pickle.dump(data, f)

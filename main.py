@@ -22,15 +22,15 @@ if __name__ == "__main__":
 
 	writer = SummaryWriter("logs")
 	
-	out_dim = 128
-	model = CustomGNN(768, 512, out_dim)
+	out_dim = 256
+	model = CustomGNN(768, 1024, out_dim)
 
 	device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
 	model = model.to(device)
 
 	try:
-		d = torch.load(f"models/checkpoint-0.pth")
-		model.load_state_dict(d, strict=False)
+		d = torch.load(f"models/checkpoint-0.pth", map_location=device)
+		model.load_state_dict(d, strict=True)
 	except:
 		print("Could not load model")
 		pass
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 	#optimizer = torch.optim.Adam(list(model.parameters()) + list(dataset.model.parameters()), lr=0.01)#, weight_decay=0.00001)
 
 	loader = DataLoader(dataset, batch_size=1, shuffle=True)
-	triplet_loss = torch.nn.TripletMarginLoss(margin=1.0, p=2)
+	triplet_loss = torch.nn.TripletMarginLoss(margin=20.0, p=2)
 	cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
 	BATCH_SIZE = 8
