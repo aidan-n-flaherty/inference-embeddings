@@ -434,17 +434,13 @@ class GraphTransformer(torch.nn.Module):
 		self.norm1 = torch.nn.LayerNorm(hidden_channels * heads)
 		self.conv2 = TransformerConv(hidden_channels * heads, hidden_channels, heads=heads)
 		self.norm2 = torch.nn.LayerNorm(hidden_channels * heads)
-		self.conv3 = TransformerConv(hidden_channels * heads, out_channels, heads=heads, concat=False)
+		self.conv3 = TransformerConv(hidden_channels * heads, out_channels, heads=8, concat=False)
 
 	def forward(self, x, edge_index, pe):
 		x = torch.cat([x, pe], dim=1)
 
-		x = F.relu(self.conv1(x, edge_index))
-		x = self.norm1(x)
-		x = F.dropout(x, p=0.2, training=self.training)
-		x = F.relu(self.conv2(x, edge_index))
-		x = self.norm2(x)
-		x = F.dropout(x, p=0.2, training=self.training)
+		x = F.tanh(self.norm1(self.conv1(x, edge_index)))
+		x = F.tanh(self.norm2(self.conv2(x, edge_index)))
 		x = self.conv3(x, edge_index)
 
 		return x.tanh()

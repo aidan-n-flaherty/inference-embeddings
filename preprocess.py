@@ -173,14 +173,15 @@ class SyntheticContrastiveDataset(Dataset):
 		self,
 		synthetic_data,
 		model_name="sentence-transformers/all-MiniLM-L6-v2",
-		cache_path="fact_sbert_cache.pkl"
+		cache_path="fact_sbert_cache.pkl",
+		seed=None
 	):
 		self.synthetic_data = synthetic_data
 		self.current_length = 0
 		self.model = SentenceTransformer(model_name)#, model_kwargs={"torch_dtype": "float16"})
 		self.cache_path = cache_path
 		self.cache = self._load_cache()
-		self.random = random.Random()
+		self.random = random.Random(seed) if seed is not None else random.Random()
 		self.access = 0
 
 	def _load_cache(self):
@@ -220,15 +221,15 @@ class SyntheticContrastiveDataset(Dataset):
 		return facts
 
 	def _make_triplet(self):
-		selection = 5
+		selection = 4
 		index = self.random.randint(0, len(self.synthetic_data) - 1)
 		item = self.synthetic_data[index]
-		true_sample = item["supported"][:selection] + self._random_external(index, 5)
+		true_sample = item["supported"][:selection] + self._random_external(index, 12)
 		false_fact = self.random.choice(item["refuted"])
 		alt = item["statement"]
 
 
-		i = self.random.randint(0, 4)
+		i = self.random.randint(0, selection)
 		
 		positive = true_sample[:i] + [alt] + true_sample[i + 1 :]
 		negative = true_sample[:i] + [false_fact] + true_sample[i + 1 :]
@@ -247,7 +248,7 @@ class SyntheticContrastiveDataset(Dataset):
 		return true_sample, positive, negative, indices.index(i), [indices.index(n) for n in range(selection)]
 
 	def __len__(self):
-		return len(self.synthetic_data)
+		return 2 * len(self.synthetic_data)
 
 	def __getitem__(self, idx):
 		original, positive, negative, flipped_index, positive_indices = self._make_triplet()

@@ -8,4 +8,4 @@ __pycache__/
 process.py
 *.txt
 tmp.json
-tmp.py
+tmp*.py

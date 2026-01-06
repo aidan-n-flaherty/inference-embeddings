@@ -12,11 +12,12 @@ class LinearProbe(nn.Module):
 		self.fc = nn.Sequential(
 			nn.Linear(3, 1),
 		)
+		self.fc1 = nn.Linear(1, 1)
 		self.flatten = nn.Flatten()
 
 	def forward(self, x):
 		#return self.fc(self.flatten(x))
-		return self.fc(x.sum(dim=1))
+		return self.fc1(self.fc(x).sum(dim=1))
 
 def run_linear_probe(dataset, test_dataset, device, epochs=10, lr=1e-3):
 	from sentence_transformers import CrossEncoder
@@ -27,8 +28,8 @@ def run_linear_probe(dataset, test_dataset, device, epochs=10, lr=1e-3):
 	optimizer = torch.optim.Adam(probe.parameters(), lr=lr)
 	criterion = nn.BCEWithLogitsLoss()
 
-	loader = DataLoader(dataset, batch_size=1, shuffle=True)
-	test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
+	loader = DataLoader(dataset, batch_size=1, shuffle=False)
+	test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 	train_acc, val_acc, train_loss, val_loss = 0.0, 0.0, 0.0, 0.0
 
@@ -44,6 +45,10 @@ def run_linear_probe(dataset, test_dataset, device, epochs=10, lr=1e-3):
 	for epoch in range(epochs):
 		total_loss = 0.0
 		n = 0
+
+		dataset.random = random.Random(0)
+		test_dataset.random = random.Random(0)
+
 		for batch in loader:
 			with torch.no_grad():
 				positive = batch["original"]
@@ -97,12 +102,21 @@ def run_linear_probe(dataset, test_dataset, device, epochs=10, lr=1e-3):
 
 				with open(f"nli_cache.pkl", "wb") as f:
 					pickle.dump(cache, f)
+			
+			if n > 20:
+				break
 		
-		for mode in ["train", "test"]:
+		for mode in ["train"]:
 			total_acc = 0
 			total_loss = 0
 			differentiation = 0
 			n = 0
+
+			loader = DataLoader(dataset, batch_size=1, shuffle=False)
+			test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+			dataset.random = random.Random(0)
+			test_dataset.random = random.Random(0)
 
 			tp, fp, tn, fn = 0, 0, 0, 0
 
@@ -163,6 +177,9 @@ def run_linear_probe(dataset, test_dataset, device, epochs=10, lr=1e-3):
 				fp += ((preds == 1) & (y.squeeze(1) == 0)).sum().item()
 				tn += ((preds == 0) & (y.squeeze(1) == 0)).sum().item()
 				fn += ((preds == 0) & (y.squeeze(1) == 1)).sum().item()
+
+				if n > 20:
+					break
 
 				#print(f"[Linear Probe Test] Epoch {epoch+1}/{epochs} {n}/{len(test_loader)} | Loss: {total_loss/n:.4f} | Acc: {total_acc/n:.4f} | Differentiation: {differentiation/n:.4f}")
 
